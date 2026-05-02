@@ -27,6 +27,24 @@ export default function TabNavigator() {
           )
         }}
       />
+      <Tabs.Screen
+        name="transactions"
+        options={{
+          title: "Txns",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons color={color} name="list-outline" size={size} />
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="categories"
+        options={{
+          title: "Cats",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons color={color} name="pricetags-outline" size={size} />
+          )
+        }}
+      />
     </Tabs>
   );
 }
