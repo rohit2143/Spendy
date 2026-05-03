@@ -1,14 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import CustomButton from "@/src/components/common/CustomButton";
 import Header from "@/src/components/common/Header";
 import Loader from "@/src/components/common/Loader";
 import { categoryService } from "@/src/services/categoryService";
 import { colors } from "@/src/theme";
-import type { Category } from "@/src/types/category";
-import type { ImportStatus, Transaction, TransactionSource, TransactionType } from "@/src/types/transaction";
+import type { Category, CategoryType } from "@/src/types/category";
+import type {
+  ImportStatus,
+  Transaction,
+  TransactionSource,
+  TransactionType
+} from "@/src/types/transaction";
 
 type FormValues = {
   categoryId: number | null;
@@ -39,7 +45,7 @@ type Props = {
     importStatus: ImportStatus;
     externalMessageId?: string;
     rawMessage?: string;
-  }) => void;
+  }) => Promise<void> | void;
   onDelete?: () => void;
 };
 
@@ -69,51 +75,85 @@ export default function TransactionForm({
     description: initialValues?.description ?? initialTransaction?.description ?? "",
     merchant: initialValues?.merchant ?? initialTransaction?.merchant ?? "",
     source: initialValues?.source ?? initialTransaction?.source ?? "MANUAL",
-    importStatus: initialValues?.importStatus ?? initialTransaction?.importStatus ?? "MANUAL"
+    importStatus: initialValues?.importStatus ?? initialTransaction?.importStatus ?? "CONFIRMED"
   });
+
+  const loadCategories = useCallback(
+    async (categoryType: CategoryType, preserveSelection: boolean) => {
+      const data = await categoryService.getCategories(userId, categoryType);
+      setCategories(data);
+      setValues((prev) => {
+        if (preserveSelection && data.some((item) => item.id === prev.categoryId)) {
+          return prev;
+        }
+
+        return { ...prev, categoryId: data[0]?.id ?? null };
+      });
+    },
+    [userId]
+  );
 
   useEffect(() => {
     let active = true;
     setLoadingCategories(true);
-    categoryService
-      .getCategories(userId, values.type)
-      .then((data) => {
-        if (!active) return;
-        setCategories(data);
-        setLoadingCategories(false);
-        if (!data.some((item) => item.id === values.categoryId)) {
-          setValues((prev) => ({ ...prev, categoryId: data[0]?.id ?? null }));
-        }
-      })
+    setError("");
+
+    loadCategories(values.type, true)
       .catch(() => {
         if (!active) return;
-        setLoadingCategories(false);
         setError("Unable to load categories.");
+      })
+      .finally(() => {
+        if (active) {
+          setLoadingCategories(false);
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [userId, values.type, values.categoryId]);
+  }, [loadCategories, values.type]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      loadCategories(values.type, true).catch(() => {
+        if (active) {
+          setError("Unable to load categories.");
+        }
+      });
+
+      return () => {
+        active = false;
+      };
+    }, [loadCategories, values.type])
+  );
 
   const categoryChoices = useMemo(() => categories.slice(0, 8), [categories]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!values.categoryId) return setError("Select a category.");
     if (!values.amount.trim() || Number(values.amount) <= 0) return setError("Enter a valid amount.");
     if (!values.description.trim()) return setError("Description is required.");
 
     setError("");
-    onSubmit({
-      categoryId: values.categoryId,
-      amount: Number(values.amount),
-      type: values.type,
-      transactionDate: values.transactionDate,
-      description: values.description.trim(),
-      merchant: values.merchant.trim() || undefined,
-      source: values.source,
-      importStatus: values.importStatus
-    });
+    try {
+      await onSubmit({
+        categoryId: values.categoryId,
+        amount: Number(values.amount),
+        type: values.type,
+        transactionDate: values.transactionDate,
+        description: values.description.trim(),
+        merchant: values.merchant.trim() || undefined,
+        source: values.source,
+        importStatus: values.importStatus
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : "Unable to save transaction."
+      );
+    }
   };
 
   if (loadingCategories) {
@@ -131,7 +171,10 @@ export default function TransactionForm({
             <TouchableOpacity
               key={type}
               onPress={() => setValues((prev) => ({ ...prev, type, categoryId: null }))}
-              style={[styles.toggleOption, active && (type === "EXPENSE" ? styles.expenseActive : styles.incomeActive)]}
+              style={[
+                styles.toggleOption,
+                active && (type === "EXPENSE" ? styles.expenseActive : styles.incomeActive)
+              ]}
             >
               <Text style={[styles.toggleText, active && (type === "EXPENSE" ? styles.expenseText : styles.incomeText)]}>
                 {type}
@@ -153,7 +196,17 @@ export default function TransactionForm({
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Category</Text>
+      <View style={styles.categoryHeader}>
+        <Text style={styles.sectionTitle}>Category</Text>
+        <TouchableOpacity
+          onPress={() => router.push(`/category/add?type=${values.type}` as never)}
+          style={styles.inlineAddCategory}
+        >
+          <Ionicons color={colors.accent} name="add-circle-outline" size={16} />
+          <Text style={styles.inlineAddCategoryText}>Add Category</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.categoryGrid}>
         {categoryChoices.map((category) => {
           const selected = values.categoryId === category.id;
@@ -294,11 +347,26 @@ const styles = StyleSheet.create({
     minWidth: 160,
     textAlign: "center"
   },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10
+  },
   sectionTitle: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 10
+    fontWeight: "700"
+  },
+  inlineAddCategory: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
+  },
+  inlineAddCategoryText: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "700"
   },
   categoryGrid: {
     flexDirection: "row",

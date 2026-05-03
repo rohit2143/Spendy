@@ -1,8 +1,8 @@
 export type TransactionType = "INCOME" | "EXPENSE";
 
-export type TransactionSource = "MANUAL" | "SMS" | "BANK_IMPORT";
+export type TransactionSource = "MANUAL" | "SMS";
 
-export type ImportStatus = "MANUAL" | "IMPORTED" | "FAILED";
+export type ImportStatus = "CONFIRMED" | "PENDING_REVIEW" | "IGNORED";
 
 export type Transaction = {
   id: number;

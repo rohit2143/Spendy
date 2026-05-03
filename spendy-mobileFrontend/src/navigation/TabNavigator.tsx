@@ -45,6 +45,15 @@ export default function TabNavigator() {
           )
         }}
       />
+      <Tabs.Screen
+        name="budgets"
+        options={{
+          title: "Budget",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons color={color} name="wallet-outline" size={size} />
+          )
+        }}
+      />
     </Tabs>
   );
 }

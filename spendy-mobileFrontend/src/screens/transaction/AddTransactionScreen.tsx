@@ -17,7 +17,7 @@ export default function AddTransactionScreen() {
       title="Add Transaction"
       userId={user.userId}
       onSubmit={async (values) => {
-        await dispatch(createTransaction({ userId: user.userId, data: values }));
+        await dispatch(createTransaction({ userId: user.userId, data: values })).unwrap();
         router.back();
       }}
     />

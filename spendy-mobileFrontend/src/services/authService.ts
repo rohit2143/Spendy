@@ -8,7 +8,7 @@ import type {
 export const authService = {
   async login(payload: LoginRequest) {
     const response = await api.post<AuthResponse>(
-      "/api/auth/login",
+      "/auth/login",
       payload
     );
     return response.data;
@@ -16,7 +16,7 @@ export const authService = {
 
   async register(payload: RegisterRequest) {
     const response = await api.post<AuthResponse>(
-      "/api/auth/register",
+      "/auth/register",
       payload
     );
     return response.data;

@@ -36,7 +36,7 @@ export default function EditTransactionScreen() {
     <TransactionForm
       initialTransaction={selectedTransaction}
       onDelete={async () => {
-        await dispatch(deleteTransaction({ userId: user.userId, transactionId: Number(id) }));
+        await dispatch(deleteTransaction({ userId: user.userId, transactionId: Number(id) })).unwrap();
         router.replace("/transactions");
       }}
       onSubmit={async (values) => {
@@ -46,7 +46,7 @@ export default function EditTransactionScreen() {
             transactionId: Number(id),
             data: values
           })
-        );
+        ).unwrap();
         router.back();
       }}
       submitLabel="Update Transaction"

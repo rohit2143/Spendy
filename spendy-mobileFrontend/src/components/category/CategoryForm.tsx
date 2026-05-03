@@ -12,6 +12,7 @@ type Props = {
   submitLabel: string;
   submitting?: boolean;
   initialCategory?: Category | null;
+  initialType?: CategoryType;
   onSubmit: (values: { name: string; type: CategoryType }) => void;
   onDelete?: () => void;
 };
@@ -21,11 +22,12 @@ export default function CategoryForm({
   submitLabel,
   submitting = false,
   initialCategory,
+  initialType,
   onSubmit,
   onDelete
 }: Props) {
   const [name, setName] = useState(initialCategory?.name ?? "");
-  const [type, setType] = useState<CategoryType>(initialCategory?.type ?? "EXPENSE");
+  const [type, setType] = useState<CategoryType>(initialCategory?.type ?? initialType ?? "EXPENSE");
   const [error, setError] = useState("");
 
   const submit = () => {

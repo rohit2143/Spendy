@@ -6,6 +6,7 @@ import type { Category, CategoryPayload, CategoryType } from "@/src/types/catego
 type CategoryState = {
   items: Category[];
   selectedCategory: Category | null;
+  recentlyCreatedCategory: Category | null;
   filter: CategoryType | "ALL";
   isLoading: boolean;
   isSubmitting: boolean;
@@ -15,6 +16,7 @@ type CategoryState = {
 const initialState: CategoryState = {
   items: [],
   selectedCategory: null,
+  recentlyCreatedCategory: null,
   filter: "ALL",
   isLoading: false,
   isSubmitting: false,
@@ -88,6 +90,9 @@ const categorySlice = createSlice({
     },
     clearSelectedCategory(state) {
       state.selectedCategory = null;
+    },
+    clearRecentlyCreatedCategory(state) {
+      state.recentlyCreatedCategory = null;
     }
   },
   extraReducers: (builder) => {
@@ -122,6 +127,7 @@ const categorySlice = createSlice({
       })
       .addCase(createCategory.fulfilled, (state, action) => {
         state.isSubmitting = false;
+        state.recentlyCreatedCategory = action.payload;
         state.items = [action.payload, ...state.items];
       })
       .addCase(createCategory.rejected, (state, action) => {
@@ -161,5 +167,6 @@ const categorySlice = createSlice({
   }
 });
 
-export const { setCategoryFilter, clearSelectedCategory } = categorySlice.actions;
+export const { setCategoryFilter, clearSelectedCategory, clearRecentlyCreatedCategory } =
+  categorySlice.actions;
 export default categorySlice.reducer;
